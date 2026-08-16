@@ -5,12 +5,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.luispacheco.repartorouter.driver.data.remote.RetrofitClient
+import com.luispacheco.repartorouter.driver.data.repository.RutaRepositoryImpl
+import com.luispacheco.repartorouter.driver.ui.rutas.RutasScreen
+import com.luispacheco.repartorouter.driver.ui.rutas.RutasViewModel
+import com.luispacheco.repartorouter.driver.ui.rutas.RutasViewModelFactory
 import com.luispacheco.repartorouter.driver.ui.theme.RepartoRouterDriverTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,29 +21,19 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             RepartoRouterDriverTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    val rutaRepository = RutaRepositoryImpl(RetrofitClient.rutaApiService)
+                    val factory = RutasViewModelFactory(rutaRepository)
+                    val rutasViewModel: RutasViewModel = viewModel(factory = factory)
+
+                    RutasScreen(
+                        viewModel = rutasViewModel,
+                        onRutaClick = { rutaId ->
+                            // Pantalla de detalle: siguiente sesión
+                        }
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    RepartoRouterDriverTheme {
-        Greeting("Android")
     }
 }
