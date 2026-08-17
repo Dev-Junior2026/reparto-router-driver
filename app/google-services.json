@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "926943152524",
+    "project_id": "reparto-router",
+    "storage_bucket": "reparto-router.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:926943152524:android:36baddffa2ed2b9358aea9",
+        "android_client_info": {
+          "package_name": "com.luispacheco.repartorouter.driver"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDTphZrxzpeKODpaLtipcEG2LUf8FLTTl4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
