@@ -8,7 +8,7 @@ import retrofit2.http.Path
 
 interface RutaApiService {
 
-    @GET("api/rutas")
+    @GET("api/rutas/mis-rutas")
     suspend fun listarRutas(): Response<List<Ruta>>
 
     @GET("api/rutas/{id}")
