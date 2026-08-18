@@ -1,11 +1,16 @@
 package com.luispacheco.repartorouter.driver
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -34,16 +39,31 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val rutaIdDesdeNotificacion = intent.getStringExtra("rutaId")
+
         setContent {
             RepartoRouterDriverTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
+
+                    val permissionLauncher = rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.RequestPermission(),
+                        onResult = { /* concedido o no, seguimos igual */ }
+                    )
+
+                    LaunchedEffect(Unit) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
+
                     val tokenManager = TokenManager(applicationContext)
 
                     val rutaRepository: RutaRepository =
                         RutaRepositoryImpl(RetrofitClient.rutaApiService)
 
                     val authRepository: AuthRepository =
-                        AuthRepositoryImpl(RetrofitClient.authApiService, tokenManager)
+                        AuthRepositoryImpl(RetrofitClient.authApiService, RetrofitClient.rutaApiService, tokenManager)
 
                     val navController = rememberNavController()
 
@@ -58,8 +78,14 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(
                                 viewModel = loginViewModel,
                                 onLoginExitoso = {
-                                    navController.navigate("rutas") {
-                                        popUpTo("login") { inclusive = true }
+                                    if (rutaIdDesdeNotificacion != null) {
+                                        navController.navigate("detalle/$rutaIdDesdeNotificacion") {
+                                            popUpTo("login") { inclusive = true }
+                                        }
+                                    } else {
+                                        navController.navigate("rutas") {
+                                            popUpTo("login") { inclusive = true }
+                                        }
                                     }
                                 }
                             )

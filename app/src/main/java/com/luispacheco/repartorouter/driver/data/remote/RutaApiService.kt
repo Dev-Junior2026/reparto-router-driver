@@ -1,9 +1,12 @@
 package com.luispacheco.repartorouter.driver.data.remote
 
+import com.luispacheco.repartorouter.driver.data.remote.dto.TokenFcmRequest
 import com.luispacheco.repartorouter.driver.domain.model.Parada
 import com.luispacheco.repartorouter.driver.domain.model.Ruta
 import retrofit2.Response
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface RutaApiService {
@@ -16,4 +19,7 @@ interface RutaApiService {
 
     @GET("api/rutas/{rutaId}/paradas")
     suspend fun listarParadas(@Path("rutaId") rutaId: Long): Response<List<Parada>>
+
+    @PUT("api/choferes/me/token-fcm")
+    suspend fun actualizarTokenFcm(@Body request: TokenFcmRequest): Response<Unit>
 }
