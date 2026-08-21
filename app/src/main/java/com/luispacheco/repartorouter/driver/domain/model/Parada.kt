@@ -13,9 +13,9 @@ data class Parada(
     val horaCierre: String,        // "HH:mm:ss"
     val tiempoDescargaMin: Int,
     val esAlmacen: Boolean,
-    val horaLlegadaEstimada: String? = null
+    val horaLlegadaEstimada: String? = null,
+    val completada: Boolean = false
 ) {
     val direccion: String
         get() = "$calle $codigoPostal $poblacion"
 }
-

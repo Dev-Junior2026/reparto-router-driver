@@ -94,16 +94,38 @@ private fun RutaCard(
     ruta: Ruta,
     onClick: () -> Unit
 ) {
+    val paradasEntrega = ruta.paradasOrdenadas.filter { !it.esAlmacen }
+    val completadas = paradasEntrega.count { it.completada }
+    val total = paradasEntrega.size
+
+    val (etiquetaEstado, colorEstado) = when {
+        total == 0 -> "Sin paradas" to MaterialTheme.colorScheme.outline
+        completadas == 0 -> "Pendiente" to MaterialTheme.colorScheme.error
+        completadas == total -> "Completada" to MaterialTheme.colorScheme.primary
+        else -> "En curso" to MaterialTheme.colorScheme.tertiary
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = ruta.nombre, style = MaterialTheme.typography.titleMedium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = ruta.nombre, style = MaterialTheme.typography.titleMedium)
+                AssistChip(
+                    onClick = {},
+                    label = { Text(etiquetaEstado) },
+                    colors = AssistChipDefaults.assistChipColors(labelColor = colorEstado)
+                )
+            }
             Spacer(modifier = Modifier.height(4.dp))
             Text(text = "Inicio: ${ruta.horaInicio}")
-            Text(text = "Paradas: ${ruta.paradasOrdenadas.size}")
+            Text(text = "Paradas: $completadas / $total completadas")
             Text(text = "Distancia: ${ruta.distanciaTotalKm} km")
         }
     }
