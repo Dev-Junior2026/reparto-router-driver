@@ -14,7 +14,7 @@ data class Parada(
     val tiempoDescargaMin: Int,
     val esAlmacen: Boolean,
     val horaLlegadaEstimada: String? = null,
-    val completada: Boolean = false
+    val estado: EstadoParada = EstadoParada.PENDIENTE
 ) {
     val direccion: String
         get() = "$calle $codigoPostal $poblacion"

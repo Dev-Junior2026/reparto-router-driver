@@ -8,7 +8,9 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
 
-    private const val BASE_URL = "http://10.0.2.2:8080/"
+    // IP local del PC en la red WiFi de casa (ver con "ipconfig").
+    // Si cambia el router o te conectas desde otra red, actualiza esta IP.
+    private const val BASE_URL = "http://192.168.1.39:8080/"
 
     private lateinit var tokenManager: TokenManager
 

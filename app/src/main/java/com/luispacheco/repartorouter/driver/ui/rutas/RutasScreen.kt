@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.luispacheco.repartorouter.driver.domain.model.EstadoParada
 import com.luispacheco.repartorouter.driver.domain.model.Ruta
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,13 +96,15 @@ private fun RutaCard(
     onClick: () -> Unit
 ) {
     val paradasEntrega = ruta.paradasOrdenadas.filter { !it.esAlmacen }
-    val completadas = paradasEntrega.count { it.completada }
+    val entregadas = paradasEntrega.count { it.estado == EstadoParada.ENTREGADO }
+    val rechazadas = paradasEntrega.count { it.estado == EstadoParada.RECHAZADO }
     val total = paradasEntrega.size
+    val resueltas = entregadas + rechazadas
 
     val (etiquetaEstado, colorEstado) = when {
         total == 0 -> "Sin paradas" to MaterialTheme.colorScheme.outline
-        completadas == 0 -> "Pendiente" to MaterialTheme.colorScheme.error
-        completadas == total -> "Completada" to MaterialTheme.colorScheme.primary
+        resueltas == 0 -> "Pendiente" to MaterialTheme.colorScheme.error
+        resueltas == total -> "Completada" to MaterialTheme.colorScheme.primary
         else -> "En curso" to MaterialTheme.colorScheme.tertiary
     }
 
@@ -125,7 +128,7 @@ private fun RutaCard(
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(text = "Inicio: ${ruta.horaInicio}")
-            Text(text = "Paradas: $completadas / $total completadas")
+            Text(text = "Paradas: $entregadas / $total entregadas" + if (rechazadas > 0) " · $rechazadas rechazadas" else "")
             Text(text = "Distancia: ${ruta.distanciaTotalKm} km")
         }
     }

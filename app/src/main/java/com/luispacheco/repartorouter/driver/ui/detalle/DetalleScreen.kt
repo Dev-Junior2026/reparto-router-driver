@@ -18,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.luispacheco.repartorouter.driver.domain.model.EstadoParada
 import com.luispacheco.repartorouter.driver.domain.model.Parada
 import com.luispacheco.repartorouter.driver.domain.model.Ruta
 
@@ -56,7 +58,7 @@ fun DetalleScreen(
                 is DetalleUiState.Exito -> {
                     DetalleContenido(
                         ruta = estado.ruta,
-                        onToggleCompletada = viewModel::toggleParadaCompletada
+                        onCambiarEstado = viewModel::cambiarEstadoParada
                     )
                 }
 
@@ -82,10 +84,10 @@ fun DetalleScreen(
 @Composable
 private fun DetalleContenido(
     ruta: Ruta,
-    onToggleCompletada: (paradaId: Long, nuevoEstado: Boolean) -> Unit
+    onCambiarEstado: (paradaId: Long, nuevoEstado: EstadoParada) -> Unit
 ) {
     val paradasEntrega = ruta.paradasOrdenadas.filter { !it.esAlmacen }
-    val completadas = paradasEntrega.count { it.completada }
+    val completadas = paradasEntrega.count { it.estado == EstadoParada.ENTREGADO }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -102,7 +104,7 @@ private fun DetalleContenido(
                         Text(text = "Fin estimado: $it")
                     }
                     Text(text = "Distancia total: ${ruta.distanciaTotalKm} km")
-                    Text(text = "Paradas: $completadas / ${paradasEntrega.size} completadas")
+                    Text(text = "Paradas: $completadas / ${paradasEntrega.size} entregadas")
                 }
             }
         }
@@ -118,7 +120,7 @@ private fun DetalleContenido(
         items(ruta.paradasOrdenadas) { parada ->
             ParadaCard(
                 parada = parada,
-                onToggleCompletada = onToggleCompletada
+                onCambiarEstado = onCambiarEstado
             )
         }
     }
@@ -127,70 +129,126 @@ private fun DetalleContenido(
 @Composable
 private fun ParadaCard(
     parada: Parada,
-    onToggleCompletada: (paradaId: Long, nuevoEstado: Boolean) -> Unit
+    onCambiarEstado: (paradaId: Long, nuevoEstado: EstadoParada) -> Unit
 ) {
     val context = LocalContext.current
-    val estiloTexto = if (parada.completada) {
+    val estiloTexto = if (parada.estado == EstadoParada.ENTREGADO) {
         TextDecoration.LineThrough
     } else {
         TextDecoration.None
     }
 
+    val colorContenedor = when (parada.estado) {
+        EstadoParada.ENTREGADO -> MaterialTheme.colorScheme.surfaceVariant
+        EstadoParada.RECHAZADO -> MaterialTheme.colorScheme.errorContainer
+        EstadoParada.PENDIENTE -> MaterialTheme.colorScheme.surface
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (parada.completada) {
-                MaterialTheme.colorScheme.surfaceVariant
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
-        )
+        colors = CardDefaults.cardColors(containerColor = colorContenedor)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // El almacén no se marca como entrega completada, solo se navega
-            if (!parada.esAlmacen) {
-                Checkbox(
-                    checked = parada.completada,
-                    onCheckedChange = { marcada ->
-                        parada.id?.let { onToggleCompletada(it, marcada) }
-                    }
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "${parada.numero}",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(end = 12.dp)
                 )
-            } else {
-                Spacer(modifier = Modifier.width(24.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = parada.nombre,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textDecoration = estiloTexto
+                    )
+                    Text(
+                        text = parada.direccion,
+                        style = MaterialTheme.typography.bodySmall,
+                        textDecoration = estiloTexto
+                    )
+                    Text(
+                        text = "Horario: ${parada.horaApertura} - ${parada.horaCierre}",
+                        style = MaterialTheme.typography.bodySmall,
+                        textDecoration = estiloTexto
+                    )
+                }
+                IconButton(onClick = { abrirNavegacion(context, parada) }) {
+                    Icon(
+                        imageVector = Icons.Default.Navigation,
+                        contentDescription = "Ir hasta ${parada.nombre}"
+                    )
+                }
             }
 
-            Text(
-                text = "${parada.numero}",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(start = 8.dp, end = 16.dp)
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = parada.nombre,
-                    style = MaterialTheme.typography.bodyLarge,
-                    textDecoration = estiloTexto
-                )
-                Text(
-                    text = parada.direccion,
-                    style = MaterialTheme.typography.bodySmall,
-                    textDecoration = estiloTexto
-                )
-                Text(
-                    text = "Horario: ${parada.horaApertura} - ${parada.horaCierre}",
-                    style = MaterialTheme.typography.bodySmall,
-                    textDecoration = estiloTexto
-                )
-            }
-            IconButton(onClick = { abrirNavegacion(context, parada) }) {
-                Icon(
-                    imageVector = Icons.Default.Navigation,
-                    contentDescription = "Ir hasta ${parada.nombre}"
+            // El almacén no lleva selector de estado, solo navegación
+            if (!parada.esAlmacen) {
+                Spacer(modifier = Modifier.height(8.dp))
+                SelectorEstadoParada(
+                    estadoActual = parada.estado,
+                    onSeleccionar = { nuevoEstado ->
+                        parada.id?.let { onCambiarEstado(it, nuevoEstado) }
+                    }
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun SelectorEstadoParada(
+    estadoActual: EstadoParada,
+    onSeleccionar: (EstadoParada) -> Unit
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OpcionEstado(
+            texto = "Pendiente",
+            seleccionado = estadoActual == EstadoParada.PENDIENTE,
+            colorSeleccionado = MaterialTheme.colorScheme.secondary,
+            onClick = { onSeleccionar(EstadoParada.PENDIENTE) },
+            modifier = Modifier.weight(1f)
+        )
+        OpcionEstado(
+            texto = "Entregado",
+            seleccionado = estadoActual == EstadoParada.ENTREGADO,
+            colorSeleccionado = androidx.compose.ui.graphics.Color(0xFF2E7D32),
+            onClick = { onSeleccionar(EstadoParada.ENTREGADO) },
+            modifier = Modifier.weight(1f)
+        )
+        OpcionEstado(
+            texto = "Rechazado",
+            seleccionado = estadoActual == EstadoParada.RECHAZADO,
+            colorSeleccionado = MaterialTheme.colorScheme.error,
+            onClick = { onSeleccionar(EstadoParada.RECHAZADO) },
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun OpcionEstado(
+    texto: String,
+    seleccionado: Boolean,
+    colorSeleccionado: androidx.compose.ui.graphics.Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        color = if (seleccionado) colorSeleccionado.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (seleccionado) 1.5.dp else 1.dp,
+            color = if (seleccionado) colorSeleccionado else MaterialTheme.colorScheme.outlineVariant
+        )
+    ) {
+        Text(
+            text = texto,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (seleccionado) colorSeleccionado else MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth()
+        )
     }
 }
 
