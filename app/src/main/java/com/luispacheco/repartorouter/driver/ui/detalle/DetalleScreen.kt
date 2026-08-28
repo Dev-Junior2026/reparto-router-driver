@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import com.luispacheco.repartorouter.driver.domain.model.EstadoParada
 import com.luispacheco.repartorouter.driver.domain.model.Parada
 import com.luispacheco.repartorouter.driver.domain.model.Ruta
+import androidx.compose.foundation.lazy.itemsIndexed
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,6 +88,7 @@ private fun DetalleContenido(
     onCambiarEstado: (paradaId: Long, nuevoEstado: EstadoParada) -> Unit
 ) {
     val paradasEntrega = ruta.paradasOrdenadas.filter { !it.esAlmacen }
+    val almacen = ruta.paradasOrdenadas.firstOrNull { it.esAlmacen }
     val completadas = paradasEntrega.count { it.estado == EstadoParada.ENTREGADO }
 
     LazyColumn(
@@ -117,17 +119,52 @@ private fun DetalleContenido(
             )
         }
 
-        items(ruta.paradasOrdenadas) { parada ->
+        // Botón de inicio, en lugar de la card del almacén
+        almacen?.let { parada ->
+            item {
+                BotonAlmacen(texto = "Empezar ruta", parada = parada)
+            }
+        }
+
+        itemsIndexed(paradasEntrega) { index, parada ->
             ParadaCard(
+                numero = index + 1,
                 parada = parada,
                 onCambiarEstado = onCambiarEstado
             )
+        }
+
+        // Botón de vuelta al almacén, tras la última parada de entrega
+        almacen?.let { parada ->
+            item {
+                BotonAlmacen(texto = "Volver al almacén", parada = parada)
+            }
         }
     }
 }
 
 @Composable
+private fun BotonAlmacen(
+    texto: String,
+    parada: Parada
+) {
+    val context = LocalContext.current
+    Button(
+        onClick = { abrirNavegacion(context, parada) },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Icon(
+            imageVector = Icons.Default.Navigation,
+            contentDescription = null,
+            modifier = Modifier.padding(end = 8.dp)
+        )
+        Text(text = texto)
+    }
+}
+
+@Composable
 private fun ParadaCard(
+    numero: Int,
     parada: Parada,
     onCambiarEstado: (paradaId: Long, nuevoEstado: EstadoParada) -> Unit
 ) {
@@ -151,7 +188,7 @@ private fun ParadaCard(
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "${parada.numero}",
+                    text = "$numero",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(end = 12.dp)
                 )
@@ -171,6 +208,14 @@ private fun ParadaCard(
                         style = MaterialTheme.typography.bodySmall,
                         textDecoration = estiloTexto
                     )
+                    if (!parada.observaciones.isNullOrBlank()) {
+                        Text(
+                            text = parada.observaciones,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            textDecoration = estiloTexto
+                        )
+                    }
                 }
                 IconButton(onClick = { abrirNavegacion(context, parada) }) {
                     Icon(
@@ -180,16 +225,13 @@ private fun ParadaCard(
                 }
             }
 
-            // El almacén no lleva selector de estado, solo navegación
-            if (!parada.esAlmacen) {
-                Spacer(modifier = Modifier.height(8.dp))
-                SelectorEstadoParada(
-                    estadoActual = parada.estado,
-                    onSeleccionar = { nuevoEstado ->
-                        parada.id?.let { onCambiarEstado(it, nuevoEstado) }
-                    }
-                )
-            }
+            Spacer(modifier = Modifier.height(8.dp))
+            SelectorEstadoParada(
+                estadoActual = parada.estado,
+                onSeleccionar = { nuevoEstado ->
+                    parada.id?.let { onCambiarEstado(it, nuevoEstado) }
+                }
+            )
         }
     }
 }
@@ -265,7 +307,6 @@ private fun abrirNavegacion(context: android.content.Context, parada: Parada) {
     try {
         context.startActivity(intentGoogleMaps)
     } catch (e: ActivityNotFoundException) {
-        // Google Maps no instalado: usamos el intent genérico geo:, que deja elegir app al usuario
         val uriGenerico = Uri.parse("geo:${parada.latitud},${parada.longitud}?q=${parada.latitud},${parada.longitud}(${parada.nombre})")
         val intentGenerico = Intent(Intent.ACTION_VIEW, uriGenerico)
         context.startActivity(intentGenerico)
