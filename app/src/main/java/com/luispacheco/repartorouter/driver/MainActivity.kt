@@ -30,6 +30,7 @@ import com.luispacheco.repartorouter.driver.ui.detalle.DetalleViewModelFactory
 import com.luispacheco.repartorouter.driver.ui.login.LoginScreen
 import com.luispacheco.repartorouter.driver.ui.login.LoginViewModel
 import com.luispacheco.repartorouter.driver.ui.login.LoginViewModelFactory
+import com.luispacheco.repartorouter.driver.ui.mapa.MapaRutaScreen
 import com.luispacheco.repartorouter.driver.ui.rutas.RutasScreen
 import com.luispacheco.repartorouter.driver.ui.rutas.RutasViewModel
 import com.luispacheco.repartorouter.driver.ui.rutas.RutasViewModelFactory
@@ -113,6 +114,21 @@ class MainActivity : ComponentActivity() {
 
                             DetalleScreen(
                                 viewModel = detalleViewModel,
+                                onBackClick = { navController.popBackStack() },
+                                onVerMapaClick = { navController.navigate("mapa/$rutaId") }
+                            )
+                        }
+
+                        composable(
+                            route = "mapa/{rutaId}",
+                            arguments = listOf(navArgument("rutaId") { type = NavType.LongType })
+                        ) { backStackEntry ->
+                            val rutaId = backStackEntry.arguments?.getLong("rutaId") ?: 0L
+                            val factory = DetalleViewModelFactory(rutaRepository, rutaId)
+                            val mapaViewModel: DetalleViewModel = viewModel(factory = factory)
+
+                            MapaRutaScreen(
+                                viewModel = mapaViewModel,
                                 onBackClick = { navController.popBackStack() }
                             )
                         }

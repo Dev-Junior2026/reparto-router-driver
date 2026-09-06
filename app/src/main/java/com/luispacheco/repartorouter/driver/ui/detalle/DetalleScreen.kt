@@ -23,12 +23,14 @@ import com.luispacheco.repartorouter.driver.domain.model.EstadoParada
 import com.luispacheco.repartorouter.driver.domain.model.Parada
 import com.luispacheco.repartorouter.driver.domain.model.Ruta
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.filled.Map
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetalleScreen(
     viewModel: DetalleViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onVerMapaClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -59,7 +61,8 @@ fun DetalleScreen(
                 is DetalleUiState.Exito -> {
                     DetalleContenido(
                         ruta = estado.ruta,
-                        onCambiarEstado = viewModel::cambiarEstadoParada
+                        onCambiarEstado = viewModel::cambiarEstadoParada,
+                        onVerMapaClick = onVerMapaClick
                     )
                 }
 
@@ -85,7 +88,8 @@ fun DetalleScreen(
 @Composable
 private fun DetalleContenido(
     ruta: Ruta,
-    onCambiarEstado: (paradaId: Long, nuevoEstado: EstadoParada) -> Unit
+    onCambiarEstado: (paradaId: Long, nuevoEstado: EstadoParada) -> Unit,
+    onVerMapaClick: () -> Unit
 ) {
     val paradasEntrega = ruta.paradasOrdenadas.filter { !it.esAlmacen }
     val almacen = ruta.paradasOrdenadas.firstOrNull { it.esAlmacen }
@@ -108,6 +112,20 @@ private fun DetalleContenido(
                     Text(text = "Distancia total: ${ruta.distanciaTotalKm} km")
                     Text(text = "Paradas: $completadas / ${paradasEntrega.size} entregadas")
                 }
+            }
+        }
+
+        item {
+            OutlinedButton(
+                onClick = onVerMapaClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Map,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text("Ver en el mapa")
             }
         }
 
